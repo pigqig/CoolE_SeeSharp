@@ -1,0 +1,63 @@
+@page
+@{
+    ViewData["Title"] = "模型管理";
+    ViewData["Lede"] = "內建 YuNet／SFace 可直接認人。自訓 YOLO 請上傳 ONNX 並啟用，推論就會改走 YOLO。";
+}
+
+<section class="grid grid-2">
+    <article class="card">
+        <h2>登錄 YOLO ONNX</h2>
+        <form id="reg" class="grid" style="gap:12px">
+            <label class="field">顯示名稱 <input name="name" placeholder="大門車牌 YOLO26n" /></label>
+            <label class="field">系列
+                <select name="family">
+                    <option value="yolo26">YOLO26</option>
+                    <option value="yolo11">YOLO11</option>
+                    <option value="yolov8">YOLOv8</option>
+                </select>
+            </label>
+            <label class="field">類別 <input name="classes" value="face,plate" /></label>
+            <label class="field">ONNX 檔 <input name="file" type="file" accept=".onnx" required /></label>
+            <button class="btn" type="submit">上傳並登錄</button>
+        </form>
+    </article>
+    <article class="card">
+        <h2>匯出提醒</h2>
+        <p class="muted">YOLO26：<code>yolo export model=best.pt format=onnx opset=18</code></p>
+        <p class="muted">YOLO11／v8：<code>opset=17</code></p>
+        <button class="btn secondary" type="button" onclick="activate('none')">停用 YOLO，改回內建偵測器</button>
+    </article>
+</section>
+<section class="card" style="margin-top:16px">
+    <h2>已登錄</h2>
+    <table class="table" id="tb">
+        <thead><tr><th>名稱</th><th>系列</th><th>任務</th><th>狀態</th><th></th></tr></thead>
+        <tbody></tbody>
+    </table>
+    <p class="muted" id="yoloState"></p>
+</section>
+
+@section Scripts {
+<script>
+async function load() {
+  const r = await fetch("/api/models").then(x => x.json());
+  yoloState.textContent = r.yoloReady ? ("目前 YOLO：" + r.yoloPath) : "尚未啟用 YOLO ONNX";
+  tb.tBodies[0].innerHTML = r.items.map(m => `<tr>
+    <td>${m.name}</td><td>${m.family}</td><td>${m.task}</td>
+    <td>${m.active ? "使用中" : ""}</td>
+    <td>${m.task === "detect" ? `<button class="btn ghost" onclick="activate('${m.id}')">啟用</button>` : ""}</td>
+  </tr>`).join("");
+}
+window.activate = async function(id) {
+  await fetch("/api/models/" + id + "/activate", { method: "POST" });
+  toast(id === "none" ? "已改回內建偵測器" : "已啟用模型");
+  load();
+};
+document.getElementById("reg").addEventListener("submit", async e => {
+  e.preventDefault();
+  try { await postForm("/api/models/register", new FormData(e.target)); toast("已登錄"); load(); }
+  catch (err) { toast(err.message, true); }
+});
+load();
+</script>
+}

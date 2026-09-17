@@ -1,0 +1,51 @@
+@page
+@{
+    ViewData["Title"] = "人臉身份庫";
+    ViewData["Lede"] = "登錄臉孔後，辨識時會用 SFace 特徵比對。YOLO 只負責找臉，不負責認人。";
+}
+
+<section class="grid grid-2">
+    <article class="card">
+        <h2>登錄身份</h2>
+        <form id="enroll" class="grid" style="gap:12px">
+            <label class="field">姓名 <input name="name" required placeholder="例如：林佳穎" /></label>
+            <label class="field">備註 <input name="note" placeholder="部門或門號" /></label>
+            <label class="field">人臉相片 <input name="file" type="file" accept="image/*" required /></label>
+            <button class="btn" type="submit">建檔</button>
+        </form>
+    </article>
+    <article class="card">
+        <h2>使用方式</h2>
+        <p class="muted">同一人請補 3 張以上不同角度。比對分數大約 0.45 以上視為同一人，現場再調門檻。</p>
+    </article>
+</section>
+<section class="card" style="margin-top:16px">
+    <h2>已建檔</h2>
+    <div class="thumb-grid" id="faces"></div>
+</section>
+
+@section Scripts {
+<script>
+async function load() {
+  const list = await fetch("/api/faces").then(r => r.json());
+  faces.innerHTML = list.map(f => `<div class="face-card">
+    <img src="${f.thumbnail}" alt="${f.name}" />
+    <strong>${f.name}</strong>
+    <p class="muted">${f.note || ""} · ${f.embeddings} 筆特徵</p>
+    <button class="btn danger" onclick="delFace('${f.id}')">刪除</button>
+  </div>`).join("") || "<p class='muted'>尚無身份。啟動時若偵測到示範相片會自動建檔。</p>";
+}
+window.delFace = async function(id) {
+  await fetch("/api/faces/" + id + "/delete", { method: "POST" });
+  load();
+};
+document.getElementById("enroll").addEventListener("submit", async e => {
+  e.preventDefault();
+  try {
+    await postForm("/api/faces/enroll", new FormData(e.target));
+    toast("已登錄"); e.target.reset(); load();
+  } catch (err) { toast(err.message, true); }
+});
+load();
+</script>
+}

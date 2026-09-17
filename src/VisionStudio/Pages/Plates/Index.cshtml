@@ -1,0 +1,26 @@
+@page
+@{
+    ViewData["Title"] = "車牌紀錄";
+    ViewData["Lede"] = "辨識到的車牌會留在這裡，方便對現場進出做事後查詢。";
+}
+
+<article class="card">
+    <table class="table" id="tb">
+        <thead><tr><th>時間</th><th>車牌</th><th>信心</th><th>來源</th><th>裁切</th></tr></thead>
+        <tbody></tbody>
+    </table>
+</article>
+
+@section Scripts {
+<script>
+fetch("/api/plates").then(r => r.json()).then(list => {
+  document.querySelector("#tb tbody").innerHTML = list.map(p => `<tr>
+    <td>${new Date(p.seenUtc).toLocaleString()}</td>
+    <td><strong>${p.text}</strong></td>
+    <td>${(p.confidence||0).toFixed(2)}</td>
+    <td>${p.source}</td>
+    <td>${p.thumbnail ? `<img src="${p.thumbnail}" alt="" style="height:40px;border-radius:6px" />` : ""}</td>
+  </tr>`).join("") || `<tr><td colspan="5" class="muted">尚無車牌。請先跑相片辨識。</td></tr>`;
+});
+</script>
+}

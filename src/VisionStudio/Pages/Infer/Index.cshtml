@@ -1,0 +1,136 @@
+@page
+@{
+    ViewData["Title"] = "相片、影片與串流辨識";
+    ViewData["Lede"] = "同一條管線：人臉（YuNet／YOLO）＋身份（SFace）＋車牌定位與讀字。攝影機畫面會送到伺服器逐格推論。";
+}
+
+<div class="checks" style="margin-bottom:14px">
+    <label><input id="opt-faces" type="checkbox" checked /> 人臉</label>
+    <label><input id="opt-identify" type="checkbox" checked /> 身份比對</label>
+    <label><input id="opt-plates" type="checkbox" checked /> 車牌</label>
+    <label><input id="opt-ocr" type="checkbox" checked /> 讀車牌字</label>
+    <label><input id="opt-yolo" type="checkbox" checked /> 優先 YOLO（若已載入）</label>
+</div>
+<div class="tabs">
+    <button class="tab on" data-tab="img">相片</button>
+    <button class="tab" data-tab="vid">影片</button>
+    <button class="tab" data-tab="live">攝影機串流</button>
+</div>
+
+<section class="pane on" id="pane-img">
+    <div class="grid grid-main">
+        <article class="card">
+            <div class="row">
+                <input type="file" id="imgFile" accept="image/*" />
+                <button class="btn" id="imgRun">辨識相片</button>
+            </div>
+            <div class="preview" style="margin-top:12px"><img id="imgOut" alt="辨識結果" /></div>
+        </article>
+        <article class="card">
+            <h3>偵測結果</h3>
+            <p class="muted" id="imgMeta">上傳後會顯示框與身份／車牌。</p>
+            <ul id="imgDets"></ul>
+        </article>
+    </div>
+</section>
+
+<section class="pane" id="pane-vid">
+    <article class="card">
+        <div class="row">
+            <input type="file" id="vidFile" accept="video/*" />
+            <button class="btn amber" id="vidRun">處理影片</button>
+        </div>
+        <p class="muted">以 ffmpeg 每秒抽 4 張，適合事後查。即時請用攝影機分頁。</p>
+        <p id="vidMeta"></p>
+        <div class="thumb-grid" id="vidThumbs"></div>
+    </article>
+</section>
+
+<section class="pane" id="pane-live">
+    <div class="grid grid-main">
+        <article class="card">
+            <div class="row">
+                <button class="btn" id="camStart">開啟攝影機</button>
+                <button class="btn ghost" id="camStop">停止</button>
+                <span class="muted" id="camFps"></span>
+            </div>
+            <video id="cam" autoplay playsinline muted style="display:none"></video>
+            <div class="preview" style="margin-top:12px"><img id="camOut" alt="串流辨識" /></div>
+        </article>
+        <article class="card">
+            <h3>即時物件</h3>
+            <ul id="camDets"></ul>
+        </article>
+    </div>
+</section>
+
+@section Scripts {
+<script>
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
+  document.querySelectorAll(".pane").forEach(x => x.classList.remove("on"));
+  t.classList.add("on");
+  document.getElementById("pane-" + t.dataset.tab).classList.add("on");
+});
+function flags() {
+  const fd = new FormData();
+  inferFlags(fd);
+  return fd;
+}
+function listDets(el, dets, notes, ms) {
+  el.innerHTML = (dets || []).map(d => `<li>${d.kind} · ${d.label} · ${d.confidence.toFixed(2)} · ${d.engine}</li>`).join("")
+    || "<li class='muted'>沒有偵測到目標</li>";
+  if (notes) el.insertAdjacentHTML("beforeend", notes.map(n => `<li class='muted'>${n}</li>`).join(""));
+  if (ms != null) el.insertAdjacentHTML("afterbegin", `<li>耗時 ${ms} ms</li>`);
+}
+imgRun.onclick = async () => {
+  if (!imgFile.files[0]) return toast("請選相片", true);
+  const fd = flags(); fd.append("file", imgFile.files[0]);
+  imgMeta.textContent = "辨識中…";
+  try {
+    const r = await postForm("/api/infer/image", fd);
+    imgOut.src = "data:image/jpeg;base64," + r.overlayJpegBase64;
+    imgMeta.textContent = `${r.width}×${r.height} · ${r.engineSummary}`;
+    listDets(imgDets, r.detections, r.notes, r.elapsedMs);
+  } catch (e) { toast(e.message, true); }
+};
+vidRun.onclick = async () => {
+  if (!vidFile.files[0]) return toast("請選影片", true);
+  const fd = flags(); fd.append("file", vidFile.files[0]);
+  vidMeta.textContent = "處理中，請稍候…";
+  try {
+    const r = await postForm("/api/infer/video", fd);
+    vidMeta.textContent = `影格 ${r.frames} · 事件 ${r.eventCount} · 車牌 ${(r.plates||[]).join(", ") || "無"}`;
+    vidThumbs.innerHTML = (r.thumbs || []).map(t => `<img src="${t}" />`).join("");
+  } catch (e) { toast(e.message, true); vidMeta.textContent = e.message; }
+};
+
+let stream = null, timer = null, busy = false;
+camStart.onclick = async () => {
+  stream = await navigator.mediaDevices.getUserMedia({ video: { width: 960, height: 540 } });
+  cam.srcObject = stream;
+  await cam.play();
+  const scratch = document.createElement("canvas");
+  timer = setInterval(async () => {
+    if (busy || cam.readyState < 2) return;
+    busy = true;
+    const t0 = performance.now();
+    scratch.width = cam.videoWidth; scratch.height = cam.videoHeight;
+    scratch.getContext("2d").drawImage(cam, 0, 0);
+    const blob = await new Promise(res => scratch.toBlob(res, "image/jpeg", 0.7));
+    const fd = flags(); fd.append("file", blob, "frame.jpg");
+    try {
+      const r = await postForm("/api/infer/frame", fd);
+      camOut.src = r.overlay;
+      listDets(camDets, r.detections, r.notes, r.elapsedMs);
+      camFps.textContent = `往返 ${(performance.now()-t0).toFixed(0)} ms`;
+    } catch (e) { camFps.textContent = e.message; }
+    busy = false;
+  }, 350);
+};
+camStop.onclick = () => {
+  clearInterval(timer); timer = null;
+  stream?.getTracks().forEach(t => t.stop());
+};
+</script>
+}

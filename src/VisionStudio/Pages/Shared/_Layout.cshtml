@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Title"] ?? "影像工作台") · VisionStudio</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="shell">
+        <aside class="rail">
+            <a class="brand" href="/">
+                <span class="brand-mark">VS</span>
+                <span>
+                    <strong>VisionStudio</strong>
+                    <small>人臉 · 車牌 · YOLO</small>
+                </span>
+            </a>
+            <nav>
+                <a href="/" class="@(ViewContext.RouteData.Values["page"] as string == "/Index" ? "on" : "")">總覽</a>
+                <a href="/Plan" class="@(ViewContext.RouteData.Values["page"] as string == "/Plan" ? "on" : "")">技術規劃</a>
+                <a href="/Datasets" class="@(ViewContext.RouteData.Values["page"] as string == "/Datasets/Index" || ViewContext.RouteData.Values["page"] as string == "/Datasets/Annotate" ? "on" : "")">資料集與標註</a>
+                <a href="/Train" class="@(ViewContext.RouteData.Values["page"] as string == "/Train/Index" ? "on" : "")">訓練工作</a>
+                <a href="/Infer" class="@(ViewContext.RouteData.Values["page"] as string == "/Infer/Index" ? "on" : "")">相片／影片／串流</a>
+                <a href="/Faces" class="@(ViewContext.RouteData.Values["page"] as string == "/Faces/Index" ? "on" : "")">人臉身份庫</a>
+                <a href="/Plates" class="@(ViewContext.RouteData.Values["page"] as string == "/Plates/Index" ? "on" : "")">車牌紀錄</a>
+                <a href="/Models" class="@(ViewContext.RouteData.Values["page"] as string == "/Models/Index" ? "on" : "")">模型管理</a>
+            </nav>
+            <div class="rail-foot">
+                .NET 8 · YOLO26 / YOLO11<br />YuNet + SFace · ONNX
+            </div>
+        </aside>
+        <main class="stage">
+            <header class="top">
+                <div>
+                    <h1>@ViewData["Title"]</h1>
+                    <p class="lede">@ViewData["Lede"]</p>
+                </div>
+                <div class="chips" id="statusChips"></div>
+            </header>
+            @RenderBody()
+        </main>
+    </div>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

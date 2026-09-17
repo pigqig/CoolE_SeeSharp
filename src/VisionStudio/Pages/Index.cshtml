@@ -1,0 +1,59 @@
+﻿@page
+@model VisionStudio.Pages.IndexModel
+@{
+    ViewData["Title"] = "影像訓練與辨識工作台";
+    ViewData["Lede"] = "人臉辨識走「偵測＋特徵」，車牌走「定位＋讀字」。新專案建議 YOLO26，穩定量產可沿用 YOLO11。";
+}
+
+<section class="grid grid-4">
+    <article class="card"><div class="stat">@Model.FaceCount <small>人臉身份</small></div></article>
+    <article class="card"><div class="stat">@Model.DatasetCount <small>資料集</small></div></article>
+    <article class="card"><div class="stat">@Model.JobCount <small>訓練工作</small></div></article>
+    <article class="card"><div class="stat">@Model.PlateCount <small>車牌紀錄</small></div></article>
+</section>
+
+<section class="grid grid-main" style="margin-top:16px">
+    <article class="card">
+        <h2>建議管線</h2>
+        <p class="muted">YOLO 擅長找位置，不負責「這個人是誰」或「車牌幾個字」。本工作台把兩段接起來。</p>
+        <table class="table">
+            <thead><tr><th>任務</th><th>建議模型</th><th>後段</th></tr></thead>
+            <tbody>
+                <tr><td>新人臉／車牌偵測訓練</td><td><code>YOLO26n</code>／<code>YOLO26s</code></td><td>匯出 ONNX opset 18</td></tr>
+                <tr><td>傾斜車牌</td><td><code>YOLO26n-obb</code></td><td>透視裁切＋OCR</td></tr>
+                <tr><td>人臉身份</td><td>YuNet 或自訓 YOLO 人臉</td><td>SFace／ArcFace 特徵比對</td></tr>
+                <tr><td>已在用的穩定量產</td><td><code>YOLO11n/s</code></td><td>ONNX opset 17</td></tr>
+                <tr><td>不建議</td><td>YOLO12、YOLO13</td><td>訓練不穩、CPU 偏慢</td></tr>
+            </tbody>
+        </table>
+        <div class="row" style="margin-top:14px">
+            <a class="btn" href="/Infer">開始辨識</a>
+            <a class="btn secondary" href="/Datasets">整理資料集</a>
+            <a class="btn ghost" href="/Plan">看完整規劃</a>
+        </div>
+    </article>
+    <article class="card">
+        <h2>目前引擎</h2>
+        <p>人臉偵測：@(Model.FaceDetector ? "YuNet 已就緒" : "未載入")</p>
+        <p>身份特徵：@(Model.FaceRecognizer ? "SFace 已就緒" : "未載入")</p>
+        <p>YOLO ONNX：@(Model.YoloReady ? Model.YoloPath : "尚未匯入自訓模型，先用內建偵測器")</p>
+        <h3 style="margin-top:18px">最近辨識</h3>
+        @if (!Model.History.Any())
+        {
+            <p class="muted">還沒有紀錄。請到「相片／影片／串流」上傳示範圖。</p>
+        }
+        else
+        {
+            <table class="table">
+                @foreach (var h in Model.History.Take(6))
+                {
+                    <tr>
+                        <td>@h.AtUtc.ToLocalTime().ToString("MM-dd HH:mm")</td>
+                        <td>人臉 @h.FaceCount／車牌 @h.PlateCount</td>
+                        <td class="muted">@h.Summary</td>
+                    </tr>
+                }
+            </table>
+        }
+    </article>
+</section>

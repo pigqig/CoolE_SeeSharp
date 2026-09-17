@@ -1,0 +1,72 @@
+@page
+@{
+    ViewData["Title"] = "訓練工作";
+    ViewData["Lede"] = "C# 匯出 YOLO 資料後呼叫 Ultralytics。這台若沒裝 Python 套件，會留下可複製的訓練指令。";
+}
+
+<section class="grid grid-2">
+    <article class="card">
+        <h2>啟動訓練</h2>
+        <form id="trainForm" class="grid" style="gap:12px">
+            <label class="field">資料集 <select name="datasetId" id="datasetId"></select></label>
+            <label class="field">模型
+                <select name="modelFamily">
+                    <option value="yolo26n">YOLO26n（建議起步）</option>
+                    <option value="yolo26s">YOLO26s</option>
+                    <option value="yolo26n-obb">YOLO26n-obb 車牌</option>
+                    <option value="yolo11n">YOLO11n</option>
+                    <option value="yolo11s">YOLO11s</option>
+                </select>
+            </label>
+            <div class="row">
+                <label class="field">Epochs <input name="epochs" type="number" value="50" min="1" /></label>
+                <label class="field">影像尺寸 <input name="imgsz" type="number" value="640" /></label>
+                <label class="field">Batch <input name="batch" type="number" value="8" /></label>
+            </div>
+            <button class="btn amber" type="submit">開始訓練</button>
+        </form>
+        <p class="muted">GPU 主機請先 <code>pip install ultralytics</code>。授權請自行確認 AGPL／企業授權。</p>
+    </article>
+    <article class="card">
+        <h2>工作紀錄</h2>
+        <div id="jobs"></div>
+    </article>
+</section>
+<section class="card" style="margin-top:16px">
+    <h2>訓練輸出</h2>
+    <div class="log" id="log">選擇一筆工作後顯示紀錄。</div>
+</section>
+
+@section Scripts {
+<script>
+let current = null;
+async function loadDs() {
+  const list = await fetch("/api/datasets").then(r => r.json());
+  datasetId.innerHTML = list.map(d => `<option value="${d.id}">${d.name}（${d.imageCount} 張）</option>`).join("");
+}
+async function loadJobs() {
+  const list = await fetch("/api/train").then(r => r.json());
+  jobs.innerHTML = list.map(j => `<p>
+    <button class="btn ghost" onclick="openJob('${j.id}')">${j.modelFamily} · ${j.status}</button>
+    <span class="muted">${j.message || ""}</span>
+  </p>`).join("") || "<p class='muted'>尚無工作</p>";
+  if (current) openJob(current);
+}
+window.openJob = async function(id) {
+  current = id;
+  const j = await fetch("/api/train/" + id).then(r => r.json());
+  log.textContent = (j.logs || []).join("\n") || "尚無輸出";
+  log.scrollTop = log.scrollHeight;
+};
+document.getElementById("trainForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const job = await postForm("/api/train", fd);
+  current = job.id;
+  toast("已建立訓練工作 " + job.id);
+  loadJobs();
+});
+loadDs(); loadJobs();
+setInterval(loadJobs, 4000);
+</script>
+}

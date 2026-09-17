@@ -1,0 +1,76 @@
+@page
+@{
+    ViewData["Title"] = "技術規劃";
+    ViewData["Lede"] = "人臉辨識、車牌辨識、YOLO 版本、影片／串流，以及 .NET 8 Web 如何訓練與推論。";
+}
+
+<article class="card plan">
+    <div class="callout">結論先講：新專案用 <strong>YOLO26n／YOLO26s</strong> 做偵測訓練；身份比對用 <strong>SFace／ArcFace</strong>；車牌加 <strong>OCR</strong>。YOLO12／13 不要拿來量產。C# 負責 Web 與 ONNX 推論，訓練仍由 Ultralytics（Python）執行。</div>
+
+    <h3>1. 為什麼不能「只用 YOLO」</h3>
+    <ul>
+        <li><strong>人臉偵測</strong>：YOLO 可以框出臉（或人）。這只回答「哪裡有臉」。</li>
+        <li><strong>人臉辨識</strong>：要把臉對齊後抽出特徵向量，再到身份庫做餘弦相似度比對。這一步用 SFace 或 InsightFace／ArcFace，不是 YOLO 分類頭。</li>
+        <li><strong>車牌偵測</strong>：YOLO（建議 OBB 旋轉框）找出車牌位置。</li>
+        <li><strong>車牌辨識</strong>：裁切、矯正後做 OCR（PaddleOCR 或自訓 CRNN）。YOLO 分類 幾千種車牌號碼不划算。</li>
+    </ul>
+
+    <h3>2. YOLO 版本建議（2026）</h3>
+    <table class="table">
+        <thead><tr><th>情境</th><th>版本</th><th>說明</th></tr></thead>
+        <tbody>
+            <tr><td>新專案、CPU／邊緣、要訓練</td><td>YOLO26n → 不夠再升 s</td><td>2026-01 最新；NMS-free；YOLO26n CPU ONNX 比 YOLO11n 快約 43%（約 38.9 ms）</td></tr>
+            <tr><td>傾斜、空拍、側向車牌</td><td>YOLO26n-obb</td><td>旋轉框，避免直立框切到字</td></tr>
+            <tr><td>遠距小車牌</td><td>yolo26n-p2.yaml 微調</td><td>P2 小物體頭；無現成 *.pt，需自行訓練</td></tr>
+            <tr><td>已有 YOLO11 流程</td><td>YOLO11n／s</td><td>Ultralytics 仍建議作為穩定量產備援</td></tr>
+            <tr><td>影片多目標編號</td><td>YOLO26 + ByteTrack</td><td>Python 用 model.track；本系統 C# 端先做 IoU 追蹤</td></tr>
+            <tr><td>不要用</td><td>YOLO12、YOLO13</td><td>官方明確不建議量產：注意力層不穩、記憶體高、CPU 慢</td></tr>
+            <tr><td>過舊</td><td>YOLOv5／v8</td><td>能跑，但新專案不必從頭選</td></tr>
+        </tbody>
+    </table>
+    <p class="muted">尺寸：n 開發與 CPU 即時、s 現場平衡、m 以上才上 GPU 伺服器。車牌與人臉資料量不大時，n／s 通常夠。</p>
+    <p>ONNX 匯出：YOLO26 用 <code>opset=18</code>；YOLOv8～YOLO12 用 <code>opset=17</code>。C# 可用 YoloSharp、YoloDotNet 或本專案內建解碼器。</p>
+
+    <h3>3. 人臉規劃</h3>
+    <ul>
+        <li>資料：多角度、燈光、口罩／眼鏡分開標。WIDER FACE 可當預訓練起點，再加現場臉。</li>
+        <li>偵測：本工作台內建 OpenCV YuNet（Apache-2.0，CPU 友善）。量大產可改自訓 YOLO26n，類別只留 face。</li>
+        <li>特徵：內建 SFace。比對門檻建議餘弦 0.35～0.55，現場再調。</li>
+        <li>身份庫：每人 3～8 張，覆蓋正面與側 30 度。不要拿偵測框直接當身份。</li>
+        <li>法規：人臉是個人資料，需告知、最小化、保存期限與權限。</li>
+    </ul>
+
+    <h3>4. 車牌規劃（台灣格式）</h3>
+    <ul>
+        <li>偵測：YOLO26n-obb；白／綠／紅／黃底都要入資料集。</li>
+        <li>讀字：PaddleOCR 或 Tesseract 作起步，量產建議自訓 CRNN／LPRNet。</li>
+        <li>校正：<code>^[A-Z]{2,3}-?\d{3,4}$</code> 過濾亂碼。</li>
+        <li>本工作台未匯入 YOLO 前，先用色彩＋輪廓定位，再做字元樣板／Tesseract。</li>
+    </ul>
+
+    <h3>5. 相片、影片、串流</h3>
+    <ul>
+        <li>相片：單張 ONNX／YuNet 推論，畫框回傳 JPEG。</li>
+        <li>影片：ffmpeg 抽帧（預設 4 fps）→ 逐張推論 → 可選組回預覽。要即時再升 fps 或 GPU。</li>
+        <li>瀏覽器攝影機：getUserMedia 送 JPEG 影格到 <code>/api/infer/frame</code>。</li>
+        <li>RTSP：ffmpeg 拉流後同一條影格管線。延遲敏感時改 GPU TensorRT。</li>
+        <li>追蹤：先 IoU；要跨遮擋再用 ByteTrack／BotSORT（Python 或之後移植）。</li>
+    </ul>
+
+    <h3>6. .NET 8 分工</h3>
+    <ul>
+        <li><strong>ASP.NET Core 8</strong>：畫面、資料集、標註、工作佇列、身份庫。</li>
+        <li><strong>ONNX Runtime + OpenCvSharp</strong>：推論、畫框、影片影格。</li>
+        <li><strong>Python Ultralytics</strong>：只有訓練與匯出。C# 不自己反傳 YOLO。</li>
+        <li>授權：Ultralytics 權重多為 AGPL-3.0，商用需企業授權或自訓後自行評估。</li>
+    </ul>
+
+    <h3>7. 訓練節奏（建議）</h3>
+    <ol>
+        <li>先用內建 YuNet／車牌定位跑通現場相片與攝影機。</li>
+        <li>把錯的、漏的圖丟進資料集標註（本系統可畫框）。</li>
+        <li>GPU 主機：<code>yolo26n</code> 50～150 epoch、imgsz 640；車牌 OBB 可用 1024。</li>
+        <li>匯出 ONNX，在「模型管理」啟用，C# 改走 YOLO。</li>
+        <li>人臉身份庫持續建檔；車牌 OCR 不夠再換 PaddleOCR。</li>
+    </ol>
+</article>

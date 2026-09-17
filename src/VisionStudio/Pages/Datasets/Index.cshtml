@@ -1,0 +1,59 @@
+@page
+@model VisionStudio.Pages.Datasets.IndexModel
+@{
+    ViewData["Title"] = "資料集與標註";
+    ViewData["Lede"] = "上傳相片、畫框、匯出 YOLO data.yaml。訓練仍用 Ultralytics，但資料在這個 Web 裡整理。";
+}
+
+<section class="grid grid-2">
+    <article class="card">
+        <h2>新增資料集</h2>
+        <form id="createForm" class="grid" style="gap:12px">
+            <label class="field">名稱 <input name="name" required placeholder="例如：大門人臉" /></label>
+            <label class="field">類別（逗號分隔） <input name="classes" value="face,plate" /></label>
+            <label class="field">建議 YOLO
+                <select name="yoloFamily">
+                    <option value="yolo26n">YOLO26n（新專案預設）</option>
+                    <option value="yolo26s">YOLO26s</option>
+                    <option value="yolo26n-obb">YOLO26n-obb（傾斜車牌）</option>
+                    <option value="yolo11n">YOLO11n（穩定量產）</option>
+                </select>
+            </label>
+            <button class="btn" type="submit">建立</button>
+        </form>
+    </article>
+    <article class="card">
+        <h2>怎麼標</h2>
+        <p class="muted">人臉框要包住整張臉；車牌框緊貼底板。同一張圖可以同時有 face 與 plate。標完到「訓練工作」啟動 YOLO。</p>
+    </article>
+</section>
+
+<section class="card" style="margin-top:16px">
+    <h2>現有資料集</h2>
+    <table class="table" id="dsTable">
+        <thead><tr><th>名稱</th><th>類別</th><th>相片</th><th>已標註</th><th>YOLO</th><th></th></tr></thead>
+        <tbody></tbody>
+    </table>
+</section>
+
+@section Scripts {
+<script>
+async function refresh() {
+  const list = await fetch("/api/datasets").then(r => r.json());
+  const tb = document.querySelector("#dsTable tbody");
+  tb.innerHTML = list.map(d => `<tr>
+    <td>${d.name}</td><td>${(d.classes||[]).join(", ")}</td>
+    <td>${d.imageCount}</td><td>${d.labeledCount}</td><td>${d.yoloFamily}</td>
+    <td><a class="btn secondary" href="/Datasets/Annotate/${d.id}">標註</a></td>
+  </tr>`).join("") || `<tr><td colspan="6" class="muted">尚無資料集</td></tr>`;
+}
+document.getElementById("createForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  await postForm("/api/datasets", fd);
+  toast("已建立資料集");
+  refresh();
+});
+refresh();
+</script>
+}

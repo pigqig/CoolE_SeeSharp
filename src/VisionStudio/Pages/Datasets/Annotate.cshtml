@@ -1,0 +1,136 @@
+@page "/Datasets/Annotate/{id}"
+@model VisionStudio.Pages.Datasets.AnnotateModel
+@{
+    ViewData["Title"] = "標註：" + Model.Name;
+    ViewData["Lede"] = "在相片上拖曳畫框，選擇類別後儲存。座標會寫成 YOLO txt。";
+}
+
+<div class="annotate-wrap">
+    <article class="card">
+        <div class="row" style="margin-bottom:12px">
+            <input type="file" id="files" multiple accept="image/*" />
+            <button class="btn secondary" id="uploadBtn" type="button">上傳相片</button>
+            <button class="btn" id="saveBtn" type="button">儲存此張標註</button>
+            <button class="btn ghost" id="exportBtn" type="button">匯出 data.yaml</button>
+        </div>
+        <canvas id="annoCanvas" width="960" height="640"></canvas>
+        <p class="muted" id="imgName"></p>
+    </article>
+    <aside class="card">
+        <h3>相片列表</h3>
+        <label class="field">類別
+            <select id="cls"></select>
+        </label>
+        <p class="muted">拖曳滑鼠畫框。點列表可換圖。</p>
+        <div id="imgList" class="thumb-grid"></div>
+        <ul id="boxList" class="muted"></ul>
+    </aside>
+</div>
+
+@section Scripts {
+<script>
+const id = "@Model.Id";
+let images = [], current = 0, boxes = [];
+let img = new Image();
+let drag = null;
+const canvas = document.getElementById("annoCanvas");
+const ctx = canvas.getContext("2d");
+const colors = ["#3ecfbf", "#f0b429", "#e85d4c", "#6ea8fe"];
+
+async function load() {
+  const data = await fetch("/api/datasets/" + id).then(r => r.json());
+  const cls = document.getElementById("cls");
+  cls.innerHTML = (data.info.classes || []).map((c,i) => `<option value="${i}">${c}</option>`).join("");
+  images = data.images || [];
+  if (images.length) select(0); else drawEmpty();
+  document.getElementById("imgList").innerHTML = images.map((im,i) =>
+    `<img src="/media/dataset/${id}/${im.fileName}" onclick="select(${i})" />`).join("");
+}
+function drawEmpty() {
+  ctx.fillStyle = "#0a1016"; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#8ea0b5"; ctx.fillText("請上傳相片", 24, 40);
+}
+window.select = function(i) {
+  current = i;
+  const im = images[i];
+  boxes = (im.boxes || []).map(b => ({...b}));
+  img.onload = () => { fit(); draw(); };
+  img.src = "/media/dataset/" + id + "/" + im.fileName;
+  document.getElementById("imgName").textContent = im.fileName;
+  renderBoxes();
+};
+function fit() {
+  const maxW = Math.min(960, canvas.parentElement.clientWidth - 36);
+  const scale = Math.min(maxW / img.width, 640 / img.height);
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  canvas.dataset.scale = scale;
+}
+function draw() {
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  const s = parseFloat(canvas.dataset.scale || "1");
+  boxes.forEach((b, i) => {
+    ctx.strokeStyle = colors[b.classId % colors.length];
+    ctx.lineWidth = 2;
+    ctx.strokeRect(b.x * s, b.y * s, b.width * s, b.height * s);
+    ctx.fillStyle = colors[b.classId % colors.length];
+    ctx.fillRect(b.x * s, b.y * s - 16, 48, 16);
+    ctx.fillStyle = "#06221f";
+    ctx.fillText(String(b.classId), b.x * s + 4, b.y * s - 4);
+  });
+}
+function renderBoxes() {
+  document.getElementById("boxList").innerHTML = boxes.map((b,i) =>
+    `<li>#${i} cls ${b.classId} <a href="#" onclick="delBox(${i});return false">刪</a></li>`).join("");
+}
+window.delBox = function(i) { boxes.splice(i,1); draw(); renderBoxes(); };
+
+canvas.addEventListener("mousedown", e => {
+  const r = canvas.getBoundingClientRect();
+  drag = { x: e.clientX - r.left, y: e.clientY - r.top };
+});
+canvas.addEventListener("mousemove", e => {
+  if (!drag) return;
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  draw();
+  ctx.strokeStyle = "#fff"; ctx.strokeRect(drag.x, drag.y, x-drag.x, y-drag.y);
+});
+canvas.addEventListener("mouseup", e => {
+  if (!drag) return;
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const s = parseFloat(canvas.dataset.scale || "1");
+  const x0 = Math.min(drag.x, x) / s, y0 = Math.min(drag.y, y) / s;
+  const w = Math.abs(x - drag.x) / s, h = Math.abs(y - drag.y) / s;
+  drag = null;
+  if (w < 4 || h < 4) return;
+  boxes.push({ classId: parseInt(document.getElementById("cls").value, 10), x: x0, y: y0, width: w, height: h });
+  if (images[current]) images[current].boxes = boxes;
+  draw(); renderBoxes();
+});
+
+document.getElementById("uploadBtn").onclick = async () => {
+  const files = document.getElementById("files").files;
+  if (!files.length) return toast("請選相片", true);
+  const fd = new FormData();
+  for (const f of files) fd.append("files", f);
+  await postForm("/api/datasets/" + id + "/images", fd);
+  toast("已上傳"); load();
+};
+document.getElementById("saveBtn").onclick = async () => {
+  if (!images[current]) return;
+  await fetch("/api/datasets/" + id + "/annotate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileName: images[current].fileName, boxes })
+  });
+  toast("已儲存標註");
+};
+document.getElementById("exportBtn").onclick = async () => {
+  const r = await fetch("/api/datasets/" + id + "/export", { method: "POST" }).then(r => r.json());
+  toast("已匯出 " + r.yaml);
+};
+load();
+</script>
+}
