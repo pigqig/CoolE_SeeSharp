@@ -23,6 +23,7 @@
             <div class="row">
                 <input type="file" id="imgFile" accept="image/*" />
                 <button class="btn" id="imgRun">辨識相片</button>
+                <button class="btn secondary" id="imgDemo" type="button">載入示範場景</button>
             </div>
             <div class="preview" style="margin-top:12px"><img id="imgOut" alt="辨識結果" /></div>
         </article>
@@ -83,15 +84,24 @@ function listDets(el, dets, notes, ms) {
   if (notes) el.insertAdjacentHTML("beforeend", notes.map(n => `<li class='muted'>${n}</li>`).join(""));
   if (ms != null) el.insertAdjacentHTML("afterbegin", `<li>耗時 ${ms} ms</li>`);
 }
+async function runImageBlob(blob, name) {
+  const fd = flags(); fd.append("file", blob, name || "scene.jpg");
+  imgMeta.textContent = "辨識中…";
+  const r = await postForm("/api/infer/image", fd);
+  imgOut.src = "data:image/jpeg;base64," + r.overlayJpegBase64;
+  imgMeta.textContent = `${r.width}×${r.height} · ${r.engineSummary}`;
+  listDets(imgDets, r.detections, r.notes, r.elapsedMs);
+}
 imgRun.onclick = async () => {
   if (!imgFile.files[0]) return toast("請選相片", true);
-  const fd = flags(); fd.append("file", imgFile.files[0]);
-  imgMeta.textContent = "辨識中…";
+  try { await runImageBlob(imgFile.files[0], imgFile.files[0].name); }
+  catch (e) { toast(e.message, true); }
+};
+imgDemo.onclick = async () => {
   try {
-    const r = await postForm("/api/infer/image", fd);
-    imgOut.src = "data:image/jpeg;base64," + r.overlayJpegBase64;
-    imgMeta.textContent = `${r.width}×${r.height} · ${r.engineSummary}`;
-    listDets(imgDets, r.detections, r.notes, r.elapsedMs);
+    const res = await fetch("/media/samples/mixed/scene_01.jpg");
+    if (!res.ok) throw new Error("找不到示範場景");
+    await runImageBlob(await res.blob(), "scene_01.jpg");
   } catch (e) { toast(e.message, true); }
 };
 vidRun.onclick = async () => {

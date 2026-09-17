@@ -180,8 +180,9 @@ public sealed class DatasetService
 
     private static string Slug(string name)
     {
-        var s = new string(name.Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray());
-        return string.IsNullOrWhiteSpace(s) ? "ds" : s.Trim('-').ToLowerInvariant();
+        var ascii = new string(name.Where(c => c <= 127 && char.IsLetterOrDigit(c)).ToArray());
+        if (string.IsNullOrWhiteSpace(ascii)) ascii = "ds";
+        return ascii.ToLowerInvariant();
     }
 
     private static string Sanitize(string fileName)

@@ -29,7 +29,7 @@
 
 @section Scripts {
 <script>
-const id = "@Model.Id";
+const id = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Id));
 let images = [], current = 0, boxes = [];
 let img = new Image();
 let drag = null;

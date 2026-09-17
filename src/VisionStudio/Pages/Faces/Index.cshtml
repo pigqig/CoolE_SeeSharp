@@ -31,7 +31,8 @@ async function load() {
   faces.innerHTML = list.map(f => `<div class="face-card">
     <img src="${f.thumbnail}" alt="${f.name}" />
     <strong>${f.name}</strong>
-    <p class="muted">${f.note || ""} · ${f.embeddings} 筆特徵</p>
+    <p class="muted">${f.note || ""}</p>
+    <p class="muted">${f.embeddings} 筆特徵</p>
     <button class="btn danger" onclick="delFace('${f.id}')">刪除</button>
   </div>`).join("") || "<p class='muted'>尚無身份。啟動時若偵測到示範相片會自動建檔。</p>";
 }
