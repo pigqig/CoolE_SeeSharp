@@ -20,4 +20,6 @@ weights/*.pt
 *.mp4
 !data/samples/**
 agent-tools/
+dist/
+
 

@@ -15,6 +15,16 @@
 
 完整理由與流程見 [docs/VISION_PLAN.md](docs/VISION_PLAN.md)，畫面上也有「技術規劃」頁。
 
+## 放到 IIS 測試
+
+請看 [docs/IIS安裝說明.md](docs/IIS安裝說明.md)。重點：
+
+1. 安裝 **ASP.NET Core 8 Hosting Bundle（x64）**
+2. 在 Windows 執行 `publish-iis.ps1`，或 `dotnet publish -c Release -r win-x64 --self-contained false`
+3. IIS 應用程式集區選 **無 Managed 程式碼**，並給站台目錄「修改」權限
+
+不要把原始碼資料夾直接指成 IIS 實體路徑。
+
 ## 本機執行
 
 需要 .NET 8 SDK、ffmpeg。人臉模型已放在 `models/`。車牌讀字建議安裝 Tesseract：

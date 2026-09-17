@@ -18,14 +18,21 @@ public sealed class StoragePaths
     public string PythonRoot { get; }
     public string RuntimeRoot { get; }
 
-    public StoragePaths(IWebHostEnvironment env)
+    public StoragePaths(IWebHostEnvironment env, IConfiguration config)
     {
         var content = env.ContentRootPath;
+        var baseDir = AppContext.BaseDirectory;
+        var publishedAppData = Path.Combine(baseDir, "App_Data");
+        var contentAppData = Path.Combine(content, "App_Data");
+        var published = Directory.Exists(Path.Combine(publishedAppData, "models"))
+            || File.Exists(Path.Combine(publishedAppData, "models", "face_detection_yunet_2023mar.onnx"))
+            || Directory.Exists(Path.Combine(contentAppData, "models"));
+
         var candidates = new[]
         {
             Path.GetFullPath(Path.Combine(content, "..", "..")),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..")),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory)),
+            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", "..", "..")),
+            Path.GetFullPath(baseDir),
             content
         };
 
@@ -33,23 +40,34 @@ public sealed class StoragePaths
             File.Exists(Path.Combine(p, "models", "face_detection_yunet_2023mar.onnx")) ||
             File.Exists(Path.Combine(p, "docs", "VISION_PLAN.md"))) ?? content;
 
-        var appData = Path.Combine(AppContext.BaseDirectory, "App_Data");
+        var appData = Directory.Exists(Path.Combine(publishedAppData, "models"))
+            ? publishedAppData
+            : Directory.Exists(Path.Combine(contentAppData, "models"))
+                ? contentAppData
+                : Path.Combine(content, "App_Data");
+
         ModelsRoot = FirstExisting(
-            Path.Combine(RepoRoot, "models"),
             Path.Combine(appData, "models"),
-            Path.Combine(content, "App_Data", "models"));
+            Path.Combine(RepoRoot, "models"),
+            Path.Combine(publishedAppData, "models"));
 
         SamplesRoot = FirstExisting(
-            Path.Combine(RepoRoot, "data", "samples"),
             Path.Combine(appData, "samples"),
-            Path.Combine(content, "App_Data", "samples"));
+            Path.Combine(RepoRoot, "data", "samples"),
+            Path.Combine(publishedAppData, "samples"));
 
         PythonRoot = FirstExisting(
-            Path.Combine(RepoRoot, "python"),
             Path.Combine(appData, "python"),
-            Path.Combine(content, "App_Data", "python"));
+            Path.Combine(RepoRoot, "python"),
+            Path.Combine(publishedAppData, "python"));
 
-        DataRoot = Path.Combine(RepoRoot, "data", "runtime");
+        var configuredData = config["Vision:DataRoot"];
+        DataRoot = !string.IsNullOrWhiteSpace(configuredData)
+            ? Path.GetFullPath(configuredData)
+            : published
+                ? Path.Combine(appData, "runtime")
+                : Path.Combine(RepoRoot, "data", "runtime");
+
         DatasetsRoot = Path.Combine(DataRoot, "datasets");
         JobsRoot = Path.Combine(DataRoot, "jobs");
         UploadsRoot = Path.Combine(DataRoot, "uploads");
@@ -63,6 +81,7 @@ public sealed class StoragePaths
         Directory.CreateDirectory(GalleryRoot);
         Directory.CreateDirectory(HistoryRoot);
         Directory.CreateDirectory(Path.Combine(DataRoot, "models"));
+        Directory.CreateDirectory(Path.Combine(content, "logs"));
     }
 
     private static string FirstExisting(params string[] paths)

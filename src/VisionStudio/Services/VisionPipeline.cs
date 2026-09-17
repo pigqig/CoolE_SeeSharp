@@ -373,7 +373,7 @@ public sealed class VideoProcessor
         progress?.Report("正在擷取影片影格（每秒 4 張）…");
         var psi = new ProcessStartInfo
         {
-            FileName = "ffmpeg",
+            FileName = ToolPaths.Ffmpeg(),
             Arguments = $"-y -i \"{videoPath}\" -vf fps=4 \"{Path.Combine(framesDir, "f_%04d.jpg")}\"",
             RedirectStandardError = true,
             RedirectStandardOutput = true,

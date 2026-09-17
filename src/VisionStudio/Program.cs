@@ -5,7 +5,8 @@ using VisionStudio.Domain;
 using VisionStudio.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls(builder.Configuration["Urls"] ?? "http://0.0.0.0:43173");
+if (!IsHostedByIis())
+    builder.WebHost.UseUrls(builder.Configuration["Urls"] ?? "http://0.0.0.0:43173");
 builder.Services.Configure<FormOptions>(o =>
 {
     o.MultipartBodyLengthLimit = 220L * 1024 * 1024;
@@ -278,5 +279,10 @@ static InferRequest ParseInfer(IFormCollection form) => new()
     ReadPlates = form["ocr"] != "0",
     PreferYolo = form["yolo"] != "0"
 };
+
+static bool IsHostedByIis() =>
+    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_PORT")) ||
+    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_IIS_PHYSICAL_PATH")) ||
+    string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_HOSTINGSTARTUPASSEMBLIES"), "Microsoft.AspNetCore.Server.IISIntegration", StringComparison.OrdinalIgnoreCase);
 
 public sealed record AnnotatePayload(string FileName, List<AnnotationBox> Boxes);
