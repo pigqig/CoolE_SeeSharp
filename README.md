@@ -173,7 +173,7 @@ YOLO11：`opset=17`，再到「模型管理」上傳 ONNX。
 郵件：[pigqig@gmail.com](mailto:pigqig@gmail.com?subject=CoolE_SeeSharp%20商業版)（主旨請寫 **CoolE_SeeSharp 商業版**，並註明社區車道／工廠大門／系統商合作）  
 網站：[ourcoolidea.com](http://ourcoolidea.com)
 
-請告訴我們場地、幾路攝影機、要認人還是先做車道。我們回能否接上你的柵欄口或大門，以及對單、通報怎麼落地到值班。
+請告訴我們場地、幾路攝影機、要認人還是先做車道。我們回能否接上你的柵欄口或大門，以及對單與通報怎麼接到值班流程。
 
 免費版請儘管 fork、改、拿去試。商業版授權是另一份合約（按據點或鏡頭，不鎖這份 MIT 原始碼）。
 
