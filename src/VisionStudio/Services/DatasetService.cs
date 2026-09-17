@@ -321,7 +321,7 @@ public sealed class TrainingService
     {
         var recipe = Path.Combine(_paths.JobsRoot, job.Id + ".command.txt");
         File.WriteAllText(recipe, $"""
-# VisionStudio 訓練指令（請在已安裝 ultralytics 的環境執行）
+# CoolE_SeeSharp 訓練指令（請在已安裝 ultralytics 的環境執行）
 python python/train_yolo.py \
   --data "{yaml}" \
   --model {job.ModelFamily} \

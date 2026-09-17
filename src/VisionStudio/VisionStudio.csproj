@@ -8,6 +8,10 @@
     <AssemblyName>VisionStudio</AssemblyName>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
+    <Product>CoolE_SeeSharp</Product>
+    <Authors>Lee Li</Authors>
+    <Copyright>Copyright © 2026 Lee Li</Copyright>
+    <AssemblyTitle>CoolE_SeeSharp</AssemblyTitle>
   </PropertyGroup>
 
   <ItemGroup>

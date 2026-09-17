@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ultralytics YOLO 訓練與 ONNX 匯出（由 VisionStudio 呼叫）。"""
+"""Ultralytics YOLO 訓練與 ONNX 匯出（由 CoolE_SeeSharp 呼叫）。"""
 from __future__ import annotations
 
 import argparse
@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Train YOLO and export ONNX for VisionStudio")
+    parser = argparse.ArgumentParser(description="Train YOLO and export ONNX for CoolE_SeeSharp")
     parser.add_argument("--data", required=True, help="YOLO data.yaml")
     parser.add_argument("--model", default="yolo26n", help="yolo26n / yolo26s / yolo26n-obb / yolo11n ...")
     parser.add_argument("--epochs", type=int, default=50)

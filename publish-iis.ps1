@@ -13,5 +13,5 @@ dotnet publish "$root\src\VisionStudio\VisionStudio.csproj" `
     --self-contained false `
     -o $Output
 
-Write-Host "已發佈到 $Output"
+Write-Host "已發佈 CoolE_SeeSharp 到 $Output"
 Write-Host "請依 docs\IIS安裝說明.md 建立應用程式集區與網站。"

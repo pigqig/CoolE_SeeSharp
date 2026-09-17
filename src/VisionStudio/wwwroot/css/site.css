@@ -43,11 +43,10 @@ button, input, select, textarea { font: inherit; }
   height: 100vh;
 }
 .brand { display: flex; gap: 12px; align-items: center; color: var(--ink); }
-.brand-mark {
+.brand-logo {
   width: 42px; height: 42px; border-radius: 12px;
-  display: grid; place-items: center;
-  background: linear-gradient(135deg, var(--teal), #1f8f9e);
-  color: #06221f; font-weight: 800; letter-spacing: -0.04em;
+  display: block; object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(62, 207, 191, 0.25);
 }
 .brand small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 .rail nav { display: flex; flex-direction: column; gap: 4px; }
@@ -57,7 +56,8 @@ button, input, select, textarea { font: inherit; }
 .rail nav a:hover, .rail nav a.on {
   background: var(--teal-dim); color: var(--ink);
 }
-.rail-foot { margin-top: auto; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.rail-foot { margin-top: auto; color: var(--muted); font-size: 12px; line-height: 1.55; }
+.rail-foot a { color: var(--teal); }
 
 .stage { padding: 28px 32px 48px; max-width: 1320px; }
 .top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 22px; }

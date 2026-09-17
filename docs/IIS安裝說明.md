@@ -1,4 +1,4 @@
-# 在 IIS 安裝 VisionStudio（Windows 測試）
+# 在 IIS 安裝 CoolE_SeeSharp（Windows 測試）
 
 這是 ASP.NET Core 8 網站，**不能**把原始碼資料夾直接當舊版 ASP.NET 網站開。請用「發佈後的檔案」或在 Windows 上執行發佈。
 
@@ -45,7 +45,7 @@ dotnet publish -c Release -r win-x64 --self-contained false -o C:\inetpub\wwwroo
 
 1. 開啟「IIS 管理員」
 2. **應用程式集區** → 新增：
-   - 名稱：`VisionStudio`
+   - 名稱：`CoolE_SeeSharp`
    - .NET CLR 版本：**無 Managed 程式碼**
    - 受控管線：**整合**
 3. 集區進階設定：
@@ -53,12 +53,12 @@ dotnet publish -c Release -r win-x64 --self-contained false -o C:\inetpub\wwwroo
    - **識別** = `ApplicationPoolIdentity`（或一個本機帳號）
    - **載入使用者設定檔** = True（原生 DLL 比較不容易缺環境）
 4. **網站** → 新增網站：
-   - 名稱：`VisionStudio`
-   - 應用程式集區：剛才的 `VisionStudio`
+   - 名稱：`CoolE_SeeSharp`
+   - 應用程式集區：剛才的 `CoolE_SeeSharp`
    - 實體路徑：`C:\inetpub\wwwroot\VisionStudio`
    - 繫結：`http`、埠 `8088`（或你要的埠；80 若已被佔就改）
 5. 對實體路徑按右鍵 → **編輯權限**：
-   - 加入 `IIS AppPool\VisionStudio`
+   - 加入 `IIS AppPool\CoolE_SeeSharp`
    - 允許 **修改**（要寫入 `App_Data\runtime` 與 `logs`）
 
 瀏覽器開：`http://伺服器IP:8088/`

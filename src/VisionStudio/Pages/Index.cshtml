@@ -1,8 +1,8 @@
 ﻿@page
 @model VisionStudio.Pages.IndexModel
 @{
-    ViewData["Title"] = "影像訓練與辨識工作台";
-    ViewData["Lede"] = "人臉辨識走「偵測＋特徵」，車牌走「定位＋讀字」。新專案建議 YOLO26，穩定量產可沿用 YOLO11。";
+    ViewData["Title"] = "CoolE_SeeSharp";
+    ViewData["Lede"] = "人臉辨識走「偵測＋特徵」，車牌走「定位＋讀字」。先用內建引擎測試，再匯入自訓 YOLO。";
 }
 
 <section class="grid grid-4">
@@ -15,7 +15,7 @@
 <section class="grid grid-main" style="margin-top:16px">
     <article class="card">
         <h2>建議管線</h2>
-        <p class="muted">YOLO 擅長找位置，不負責「這個人是誰」或「車牌幾個字」。本工作台把兩段接起來。</p>
+        <p class="muted">YOLO 擅長找位置，不負責「這個人是誰」或「車牌幾個字」。本軟體把兩段接起來。</p>
         <table class="table">
             <thead><tr><th>任務</th><th>建議模型</th><th>後段</th></tr></thead>
             <tbody>
@@ -29,7 +29,7 @@
         <div class="row" style="margin-top:14px">
             <a class="btn" href="/Infer">開始辨識</a>
             <a class="btn secondary" href="/Datasets">整理資料集</a>
-            <a class="btn ghost" href="/Plan">看完整規劃</a>
+            <a class="btn ghost" href="/Models">模型管理</a>
         </div>
     </article>
     <article class="card">

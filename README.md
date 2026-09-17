@@ -1,8 +1,12 @@
-# VisionStudio
+# CoolE_SeeSharp
 
-.NET 8 影像訓練與辨識工作台：人臉身份、車牌讀字、YOLO 資料集／訓練／ONNX 推論，支援相片、影片與攝影機串流。
+人臉與車牌辨識工作台（.NET 8）：身份庫、車牌讀字、YOLO 資料集／訓練／ONNX 推論，支援相片、影片與攝影機串流。
 
-## 建議模型（請先看這裡）
+產品名稱來自 C#（See Sharp）與「看清楚」。
+
+授權：MIT，[GitHub 授權全文](https://github.com/lee-li/CoolE_SeeSharp/blob/main/LICENSE)。Copyright © 2026 Lee Li。
+
+## 建議模型
 
 | 用途 | 建議 |
 | --- | --- |
@@ -13,7 +17,7 @@
 | 已有 YOLO11 量產 | 可續用 YOLO11n／s |
 | 不要用 | YOLO12、YOLO13（官方不建議量產） |
 
-完整理由與流程見 [docs/VISION_PLAN.md](docs/VISION_PLAN.md)，畫面上也有「技術規劃」頁。
+開發備註見 [docs/VISION_PLAN.md](docs/VISION_PLAN.md)（不在操作畫面）。
 
 ## 放到 IIS 測試
 
@@ -23,7 +27,7 @@
 2. 在 Windows 執行 `publish-iis.ps1`，或 `dotnet publish -c Release -r win-x64 --self-contained false`
 3. IIS 應用程式集區選 **無 Managed 程式碼**，並給站台目錄「修改」權限
 
-不要把原始碼資料夾直接指成 IIS 實體路徑。
+不要把原始碼資料夾直接指成 IIS 實體路徑。重新發佈後，畫面會顯示 CoolE_SeeSharp 與 logo。
 
 ## 本機執行
 
@@ -41,7 +45,6 @@ chmod +x run.sh
 
 ```bash
 pip install ultralytics
-# 在 Web「訓練工作」啟動，或：
 python python/train_yolo.py --data <data.yaml> --model yolo26n --epochs 50 --imgsz 640 --project ./runs --name demo
 ```
 

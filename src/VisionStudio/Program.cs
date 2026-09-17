@@ -52,6 +52,7 @@ app.Use(async (ctx, next) =>
 app.UseStaticFiles();
 app.UseRouting();
 app.MapRazorPages();
+app.MapGet("/Plan", () => Results.Redirect("/"));
 
 app.MapGet("/media/gallery/{file}", (string file, StoragePaths paths) => Serve(paths.GalleryRoot, file));
 app.MapGet("/media/history/{file}", (string file, StoragePaths paths) => Serve(paths.HistoryRoot, file));
