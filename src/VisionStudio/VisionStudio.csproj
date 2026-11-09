@@ -9,9 +9,9 @@
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <IsTransformWebConfigDisabled>true</IsTransformWebConfigDisabled>
     <Product>CoolE_SeeSharp</Product>
-    <Authors>Joseph_Li</Authors>
+    <Authors>Lee</Authors>
     <Company>酷意 AI</Company>
-    <Copyright>Copyright © 2026 Joseph_Li</Copyright>
+    <Copyright>Copyright © 2026 Lee</Copyright>
     <AssemblyTitle>CoolE_SeeSharp</AssemblyTitle>
   </PropertyGroup>
 
